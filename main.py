@@ -123,58 +123,62 @@ class StartWindow(Tk):
         # try:
         df1 = pd.read_excel(rf"{self.selected_tables[0]}", header=1)
         # print(df1.loc[:, ['№ вагона', "Дата подачи"]])
-        f = open(self.selected_tables[1], 'rb')
-        document = Document(f)
-        f.close()
-        dataframes = self.read_docx_table(document, table_num=0, nheader=1)
-
+        dataframe = pd.read_excel(rf"{self.selected_tables[1]}", header=0)
+        # print(dataframe.iloc[:, 1])
+        # print(dataframe.iloc[:, 4])
+        # print(dataframe.iloc[:, 7])
         last_date = ""
-        for i in range(len(dataframes)):
-            dataframes[i].columns = [f"{idx}{str(j).lower()}" for idx, j in enumerate(dataframes[i].columns)]
-            if len(dataframes[i].columns) != 9:
-                messagebox.showinfo("Ошибка!", "В таблице МАВр не 9 колонок.")
-                self.quit()
-            for l in [1, 4, 7]:
-                for j in range(len(dataframes[i][f"{l}дата"])):
-                    if last_date == "" or dataframes[i][f"{l}дата"][j]:
-                        last_date = dataframes[i][f"{l}дата"][j]
-                    elif not dataframes[i][f"{l}дата"][j]:
-                        dataframes[i][f"{l}дата"][j] = last_date
+        for i in [1, 4, 7]:
+            for j in range(len(dataframe.iloc[:, i])):
+                # print(str(dataframe.iloc[:, i][j]))
+                date = dataframe.iloc[:, i][j]
+                if last_date == "" or date.isoformat() != "NaT":
+                    last_date = str(date)
+                else:
+                    dataframe.iloc[:, i][j] = pd.to_datetime(last_date)
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        # print(dataframe)
 
-            dataframe1 = dataframes[i].iloc[:, 3:6].rename({"3": "", "4дата": "дата", "50№вагона": "№вагона"})
-            dataframe2 = dataframes[i].iloc[:, 6:9].rename({"6": "", "7дата": "дата", "8№вагона": "№вагона"})
-            dataframes[i] = dataframes[i].drop(dataframes[i].columns[[j for j in range(3, 9)]], axis=1)
-            dataframes[i].columns = ["", "Дата", "№ вагона"]
-            dataframe1.columns = ["", "Дата", "№ вагона"]
-            dataframe2.columns = ["", "Дата", "№ вагона"]
-            dataframes[i] = pd.concat([dataframes[i], dataframe1, dataframe2], ignore_index=True)
+        dataframe1 = dataframe.iloc[:, 3:6].rename({"3": "", "4дата": "дата", "50№вагона": "№вагона"})
+        dataframe2 = dataframe.iloc[:, 6:9].rename({"6": "", "7дата": "дата", "8№вагона": "№вагона"})
+        dataframe = dataframe.drop(dataframe.columns[[j for j in range(3, 9)]], axis=1)
+        dataframe.columns = ["", "Дата", "№ вагона"]
+        dataframe1.columns = ["", "Дата", "№ вагона"]
+        dataframe2.columns = ["", "Дата", "№ вагона"]
+        dataframe = pd.concat([dataframe, dataframe1, dataframe2], ignore_index=True).set_index("").sort_index()
+        dataframe = dataframe[pd.isna(dataframe['№ вагона']) == False]
+        dataframe[["№ вагона"]] = dataframe[["№ вагона"]].astype(int)
+        # print(dataframe)
 
         result_data = {"№ вагона": [], "Дата": [], "Проблема": []}
-        dataframe = pd.concat([dataframes[0], dataframes[1]], ignore_index=True)
-        day, month, year = map(int, dataframes[0].loc[0, "Дата"].split("."))
+        year, month, day = map(int, str(dataframe.iloc[0, 0]).split(" ")[0].split("-"))
+        # print(day, month, year)
         start_month = (2 - len(str(month - 1))) * "0" + str(month - 1)
         start_year = str(year)
         if start_month == "00":
             start_month = "12"
             start_year = str(int(year) - 1)
-        start_date = f"20{start_year}-{start_month}-15"
+        start_date = f"{start_year}-{start_month}-15"
         start_date = pd.to_datetime(f"{start_date}")
 
         df1['Дата подачи'] = pd.to_datetime(df1['Дата подачи'], errors='coerce')
         filter1 = df1['Дата подачи'] > start_date
         df1 = df1[filter1]
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
         df1 = df1.loc[:, ['№ вагона', "Дата подачи"]]
-
+        df1 = df1[pd.isna(df1['№ вагона']) == False]
         # print(df1)
         used = []
         for i in range(len(dataframe["№ вагона"])):
-            if dataframe["№ вагона"].iloc[i] == "":
-                continue
+            # print(1)
+            dataframe["№ вагона"].iloc[i] = str(dataframe["№ вагона"].iloc[i]).strip()
+            # if dataframe["№ вагона"].iloc[i] == "":
+            #     continue
             closest = [100, "", ""]
             for j in range(len(df1["№ вагона"])):
+                # print(str(df1["№ вагона"].iloc[j]).strip(), str(dataframe["№ вагона"].iloc[i]).strip())
                 if lv.distance(str(df1["№ вагона"].iloc[j]).strip(), str(dataframe["№ вагона"].iloc[i]).strip()) < closest[0]:
+                    # print(str(df1["№ вагона"].iloc[j]).strip(), str(dataframe["№ вагона"].iloc[i]).strip())
                     closest[0] = lv.distance(str(df1["№ вагона"].iloc[j]).strip(), str(dataframe["№ вагона"].iloc[i]).strip())
                     closest[1] = str(df1["№ вагона"].iloc[j]).strip()
                     closest[2] = str(df1["Дата подачи"].iloc[j])
@@ -182,13 +186,15 @@ class StartWindow(Tk):
                 result_data["№ вагона"].append(dataframe["№ вагона"].iloc[i])
                 result_data["Дата"].append(dataframe["Дата"].iloc[i])
                 result_data["Проблема"].append(f'Номера нет в таблице Ближаший номер: {closest[1]} Дата подачи: {closest[2].replace("-", ".")[:-9]}')
-            if dataframe["№ вагона"].value_counts()[dataframe["№ вагона"][i]] > 1 and str(dataframe["№ вагона"].iloc[i]) not in used:
+            if not pd.isna(dataframe["№ вагона"].iloc[i]) and dataframe["№ вагона"].value_counts()[dataframe["№ вагона"].iloc[i]] > 1 and str(dataframe["№ вагона"].iloc[i]) not in used:
                 used.append(str(dataframe["№ вагона"].iloc[i]))
                 result_data["№ вагона"].append(dataframe["№ вагона"].iloc[i])
                 result_data["Дата"].append(dataframe["Дата"].iloc[i])
                 result_data["Проблема"].append(f'Номер встретился больше 1 раза')
 
         res = pd.DataFrame(result_data)
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
         # print(res)
         res.to_excel('Результат.xlsx')
         messagebox.showinfo("Успех!", "Файл успешно создан.")
@@ -206,7 +212,7 @@ class StartWindow(Tk):
         """ Отвечает за работу file_explorer_bt. Выводит имена выбранных ботов. Удаляет повторения.
             Проверяет, достаточно ли данных для начала турнира."""
         path = fd.askopenfilename(title='Выберете таблицу для сравнения',
-                                  filetypes=[("*", ".docx")])
+                                  filetypes=[('*', '.xlsx'), ('*', '.xls')])
         if path != self.selected_tables[1]:
             self.selected_tables[1] = path
 
