@@ -1,6 +1,30 @@
 import streamlit as st
 import pandas as pd
-import Levenshtein as lv
+import sys
+import functools
+sys.setrecursionlimit(1000)
+
+
+def lv(s1, s2):
+    n = len(s1)
+    m = len(s2)
+
+    @functools.lru_cache(maxsize=None)
+    def distance(i, j):
+        if i == 0 and j == 0:
+            return 0
+        if i == 0:
+            return j
+        if j == 0:
+            return i
+
+        a = 1
+        if s1[i - 1] == s2[j - 1]:
+            a = 0
+
+        return min(distance(i, j - 1) + 1, distance(i - 1, j) + 1, distance(i - 1, j - 1) + a)
+
+    return distance(n, m)
 
 
 def main():
@@ -94,9 +118,9 @@ def start(our_register, mavr_register):
         closest = [100, "", ""]
         for j in range(len(our_register_df["№ вагона"])):
             # print(str(our_register_df["№ вагона"].iloc[j]).strip(), str(mavr_register_df["№ вагона"].iloc[i]).strip())
-            if lv.distance(str(our_register_df["№ вагона"].iloc[j]).strip(), str(mavr_register_df["№ вагона"].iloc[i]).strip()) < closest[0]:
+            if lv(str(our_register_df["№ вагона"].iloc[j]).strip(), str(mavr_register_df["№ вагона"].iloc[i]).strip()) < closest[0]:
                 # print(str(our_register_df["№ вагона"].iloc[j]).strip(), str(mavr_register_df["№ вагона"].iloc[i]).strip())
-                closest[0] = lv.distance(str(our_register_df["№ вагона"].iloc[j]).strip(), str(mavr_register_df["№ вагона"].iloc[i]).strip())
+                closest[0] = lv(str(our_register_df["№ вагона"].iloc[j]).strip(), str(mavr_register_df["№ вагона"].iloc[i]).strip())
                 closest[1] = str(our_register_df["№ вагона"].iloc[j]).strip()
                 closest[2] = str(our_register_df["Дата подачи"].iloc[j])
         if closest[0] > 0:
