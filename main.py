@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import sys
 import functools
+import pip
+pip.main(["install", "openpyxl"])
 sys.setrecursionlimit(1000)
 
 
