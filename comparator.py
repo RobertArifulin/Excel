@@ -35,8 +35,7 @@ def start_cmp(our_register, mavr_register):
     last_date = ""
 
     for i in range(len(our_register_df['Дата подачи'])):
-        if our_register_df['Дата подачи'][i].count(".") == 2 and len(our_register_df['Дата подачи'][i]) == 10:
-
+        if str(our_register_df['Дата подачи'][i]).count(".") == 2 and len(our_register_df['Дата подачи'][i]) == 10:
             our_register_df['Дата подачи'][i] = pd.to_datetime(".".join(our_register_df['Дата подачи'][i].split(".")[::-1]))
         else:
             our_register_df['Дата подачи'][i] = None
@@ -45,8 +44,7 @@ def start_cmp(our_register, mavr_register):
         for j in range(len(mavr_register_df.iloc[:, i])):
 
             date = mavr_register_df.iloc[:, i][j]
-
-            if last_date == "" or str(date) == "nan" or date.isoformat() != "NaT":
+            if last_date == "" or str(date) == "nan" or type(date) == str or date.isoformat() != "NaT":
                 last_date = str(date)
             else:
                 mavr_register_df.iloc[:, i][j] = pd.to_datetime(last_date)
@@ -61,6 +59,8 @@ def start_cmp(our_register, mavr_register):
     dataframe2.columns = ["", "Дата", "№ вагона"]
     mavr_register_df = pd.concat([mavr_register_df, dataframe1, dataframe2], ignore_index=True).set_index("").sort_index()
     mavr_register_df = mavr_register_df[pd.isna(mavr_register_df['№ вагона']) == False]
+    mavr_register_df = mavr_register_df[mavr_register_df['№ вагона'] != "№вагона"]
+
     mavr_register_df[["№ вагона"]] = mavr_register_df[["№ вагона"]].astype(int)
 
     result_data = {"№ вагона": [], "Дата": [], "Проблема": []}
@@ -75,11 +75,12 @@ def start_cmp(our_register, mavr_register):
 
     our_register_df = our_register_df.loc[:, ['№ вагона', "Дата подачи"]]
 
-    filter1 = our_register_df['Дата подачи'] > start_date
-    our_register_df = our_register_df[filter1]
+    # filter1 = our_register_df['Дата подачи'] > start_date
+    # our_register_df = our_register_df[filter1]
+    #
+    # our_register_df = our_register_df[pd.isna(our_register_df['№ вагона']) == False]
+    # our_register_df = our_register_df[pd.isna(our_register_df['Дата подачи']) == False]
 
-    our_register_df = our_register_df[pd.isna(our_register_df['№ вагона']) == False]
-    our_register_df = our_register_df[pd.isna(our_register_df['Дата подачи']) == False]
     used = []
     for i in range(len(mavr_register_df["№ вагона"])):
 
