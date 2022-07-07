@@ -59,9 +59,8 @@ def start_cmp(our_register, mavr_register):
     dataframe2.columns = ["", "Дата", "№ вагона"]
     mavr_register_df = pd.concat([mavr_register_df, dataframe1, dataframe2], ignore_index=True).set_index("").sort_index()
     mavr_register_df = mavr_register_df[pd.isna(mavr_register_df['№ вагона']) == False]
-    mavr_register_df = mavr_register_df[mavr_register_df['№ вагона'] != "№вагона"]
 
-    mavr_register_df[["№ вагона"]] = mavr_register_df[["№ вагона"]].astype(int)
+    mavr_register_df[["№ вагона"]] = mavr_register_df[["№ вагона"]].astype(int, errors="ignore")
 
     result_data = {"№ вагона": [], "Дата": [], "Проблема": []}
     year, month, day = map(int, str(mavr_register_df.iloc[0, 0]).split(" ")[0].split("-"))
@@ -92,6 +91,8 @@ def start_cmp(our_register, mavr_register):
                 closest[1] = str(our_register_df["№ вагона"].iloc[j]).strip()
                 closest[2] = str(our_register_df["Дата подачи"].iloc[j])
         if closest[0] > 0:
+            if not str(mavr_register_df["№ вагона"].iloc[i]).isdigit():
+                continue
             result_data["№ вагона"].append(mavr_register_df["№ вагона"].iloc[i])
             result_data["Дата"].append(mavr_register_df["Дата"].iloc[i])
             result_data["Проблема"].append(f'Номера нет в таблице Ближаший номер: {closest[1]} Дата подачи: {closest[2].replace("-", ".")[:-9]}')
