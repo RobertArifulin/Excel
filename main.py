@@ -2,7 +2,11 @@ import streamlit as st
 from app import App
 from pages import comparator, instruction
 import pip
-pip.main(["install", "openpyxl"])
+
+if hasattr(pip, 'main'):
+    pip.main(["install", "openpyxl"])
+else:
+    pip._internal.main(['install', "openpyxl"])
 
 
 def main():
